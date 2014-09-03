@@ -1,0 +1,141 @@
+<html ng-app="roguelike">
+    <head>
+		<style>
+.gridMap{
+    float: left;
+    font-family: courier;
+    border: 1px solid #aaa;
+    border-radius: 5px;    
+}
+        
+.gridRow, .gridTile{
+    float: left;
+    margin: 0;
+    padding: 0;
+    
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+.gridRow{
+    clear: both;
+    overflow: hidden;
+}
+
+.gridTile{
+    width: .65em;
+    height: 1em;
+    cursor: pointer;
+    
+    transition : background-color .5s, color .5s;
+}
+
+.gridTile:hover{
+    background-color: #aaa;
+}
+
+
+.viewable{
+    background-color: #fff;
+    color: #000;
+}
+.seen{
+    background-color: #aaa;
+    color: #666; 
+}
+.wall{
+	background-color: #666;
+	color: #666;
+}
+
+.unknown{
+	background-color: #333;
+	color: #333;
+}
+		</style>			
+        <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.0-beta.13/angular.min.js"></script>
+		<script type="text/javascript" src="nf.js"></script>
+        <script type="text/javascript" src="jsex.js"></script>
+		<script type="text/javascript" src="mapgen.js"></script>
+		<script type="text/javascript" src="game.js"></script>
+        
+        <script type="text/javascript">
+angular
+.module('roguelike', [])
+.controller('rlCtrl', function($scope){    
+    jsex.update();
+	
+    $scope.player = jsex.system.get('PlayerSystem').currentPlayer;
+    $scope.movement = $scope.player.Movement;
+    
+    $scope.view = $scope.player.Vision.view;
+	    
+    $scope.tileClicked = function(viewTile){
+		var mapTile = $scope.player.Location.map.tiles[viewTile.y][viewTile.x];
+		$scope.movement.nextTile = mapTile;
+		jsex.update();
+    };
+    
+    $scope.onKeydown = function(e){
+		
+		if(e.which == 32){
+			jsex.update();
+			return;
+		}
+		
+        for(var i = 0; i < $scope.movement.moves.length; i++){
+            var move = $scope.movement.moves[i];
+            
+            if(move.move.code == e.which){
+                $scope.movement.nextTile = move.tile;
+				jsex.update();
+                e.preventDefault();
+                return;
+            }
+        }
+    };
+	
+	$scope.inventoryItemClicked = function(item){
+		jsex.system.get('InventorySystem').drop($scope.player, item);
+		jsex.update();
+	};
+	
+	$scope.floorItemClicked = function(item){
+		jsex.system.get('InventorySystem').pickup($scope.player, item);
+		jsex.update();
+	};
+})
+.directive('keyDown', function($document){
+	return {
+		restrict: 'A',
+		link : function($scope, $element, $attr){
+			var func = $scope.$eval($attr.keyDown);
+
+			$document.on('keydown', function(e){
+				$scope.$apply(function(){
+					func(e);
+				});
+			});
+		}
+	};
+});
+        </script>
+    </head>
+    <body ng-controller="rlCtrl" key-down="onKeydown">
+        <div class="gridMap">
+            <div class="gridRow" ng-repeat="row in view">
+                <div  class="gridTile" ng-class="{ 'wall' :  tile.terrain.name == 'wall', 'unknown' : tile.terrain.name == 'unknown', 'viewable' : tile.viewable, 'seen' : tile.seen && !tile.viewable}" ng-repeat="tile in row" ng-click="tileClicked(tile)">{{tile.char}}</div>
+            </div>
+        </div>
+		<div class="inventory" ng-if="player.Inventory.items.length > 0">
+			inventory:
+			<div class="inventoryItem" ng-repeat="item in player.Inventory.items" ng-click="inventoryItemClicked(item)">{{item.name}}</div>
+		</div>
+		<div class="floorItems" ng-if="player.Inventory.canPickUp.length > 0">
+			stuff here:
+			<div class="floorItem" ng-repeat="item in player.Inventory.canPickUp" ng-click="floorItemClicked(item)">{{item.name}}</div>
+		</div>
+    </body>
+</html>
