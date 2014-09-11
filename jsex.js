@@ -149,8 +149,6 @@ var jsex = (function(){
         var args = Array.prototype.slice.call(arguments);
         
         var entity = jsex.entity.create();
-
-        args.splice(1, 0, entity);
         
         jsex.entity.decorate.apply({}, args);
         

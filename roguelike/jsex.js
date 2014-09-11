@@ -103,79 +103,72 @@ var jsex = (function(){
     
     function Entity(){
         this.name = 'Entity';
-        
-        this.add = function(name){
-            var args = Array.prototype.slice.call(arguments);
-            
-            var newComponent = jsex.component.generate.apply(name, args);
-            newComponent.entity = this;
-            
-            if(!this.hasOwnProperty(name))
-                this[name] = [];
+    }
+    Entity.prototype.with = function(name){
+        var args = Array.prototype.slice.call(arguments);
+
+        var newComponent = jsex.component.generate.apply(name, args);
+        newComponent.entity = this;
+
+        if(!this.hasOwnProperty(name))
+            this[name] = [];
+
+        var fn = componentTemplates[name];
+
+        if(fn.multiple)
+            this[name].push(newComponent);
+        else
+            this[name] = newComponent;
+
+        console.log('added component ' + name  + ' to ' + this.name);
+
+        return this;
+    }
+    Entity.prototype.named = function(name){
+        this.name = name;
+        return this;
+    }
+    Entity.prototype.remove = function(){
+        nf.arrayRemove(this, entities);
+    }
+    Entity.prototype.decorate = function(templateName){
+        var template = null;
+    
+        if(entityTemplates.hasOwnProperty(templateName))
+            template = entityTemplates[templateName];
+        else
+            throw "Unknown entity template ["+templateName+"]";
                 
-            var fn = componentTemplates[name];
-            
-            if(fn.multiple)
-                this[name].push(newComponent);
-            else
-                this[name] = newComponent;
-            
-            console.log('added component ' + name  + ' to ' + this.name);
-            
-            return this;
-        };
+        var args = Array.prototype.slice.call(arguments);
         
-        this.setName = function(name){
-            this.name = name;
-            return this;
-        };
+        args.shift(); //remove templateName
         
-        this.remove = function(){
-            nf.arrayRemove(this, entities);
-        };
-    };
+        template.apply(this, args);
+        
+        return this;
+    }    
     
     jsex.entity.create = function(){
         var newEntity = new Entity();
         entities.push(newEntity);
         return newEntity;
-    };
+    }
     
     jsex.entity.template = function(name, fn){
-        entityTemplates[name] = fn;        
-    };
+        entityTemplates[name] = fn;
+    }
     
-    jsex.entity.generate = function(name){
+    jsex.entity.generate = function(templateName){
         var args = Array.prototype.slice.call(arguments);
         
-        var entity = jsex.entity.create();
+        var newEntity = jsex.entity.create();
+        
+        newEntity.decorate.apply(newEntity, args);
+        
+        return newEntity;
+    };
+    
 
-        args.splice(1, 0, entity);
-        
-        jsex.entity.decorate.apply({}, args);
-        
-        return entity;
-    };
-    
-    jsex.entity.decorate = function(name, entity){
-        var fn = null;
-    
-        if(entityTemplates.hasOwnProperty(name))
-            fn = entityTemplates[name];
-        else
-            throw "Unknown system ["+name+"]";
-        
-        if(!nf.isDefined(entity) || entity == null)
-            throw 'Entity was not passed!';        
-        
-        var args = Array.prototype.slice.call(arguments);
-        
-        args.shift();
-        
-        fn.apply({}, args);
-        
-        return entity;
-    };    
     
     //---update-------------------------------------
     
