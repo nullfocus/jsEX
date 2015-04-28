@@ -1,4 +1,4 @@
-jsex
+jsEX
 ====
 
 Javascript Entity Component System
